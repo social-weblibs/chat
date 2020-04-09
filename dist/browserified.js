@@ -113,6 +113,7 @@ function createChatInterfaceMixin (lib, mylib) {
     this.messageSeen = this.createBufferableHookCollection();
     this.messageToSend = this.createBufferableHookCollection();
     this.needGroupCandidates = this.createBufferableHookCollection();
+    this.forgetSelected = this.createBufferableHookCollection();
     this.activechat = null;
     this.lastnotification = null;
     this.chatmessages = null;
@@ -121,6 +122,10 @@ function createChatInterfaceMixin (lib, mylib) {
     this.chatmessages = null;
     this.lastnotification = null;
     this.activechat = null;
+    if (this.forgetSelected) {
+      this.forgetSelected.destroy();
+    }
+    this.forgetSelected = null;
     if (this.needGroupCandidates) {
       this.needGroupCandidates.destroy();
     }
@@ -206,12 +211,17 @@ function createChatInterfaceMixin (lib, mylib) {
     }
     this.messageSeen.fire({convid: this.activechat.get('data').id, msgid: msgid});
   };
+  ChatInterfaceMixin.prototype.detachActiveChat = function () {
+    this.set('activechat', null);
+    this.forgetSelected.fire(true);
+  };
 
   ChatInterfaceMixin.addMethods = function (klass) {
     lib.inheritMethods(klass, ChatInterfaceMixin
       ,'set_lastnotification'
       ,'initiateWithUsers'
       ,'handleMessageSeen'
+      ,'detachActiveChat'
     );
   };
 
