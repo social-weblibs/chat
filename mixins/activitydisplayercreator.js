@@ -1,12 +1,16 @@
 function createChatActivityDisplayer (lib, arrayopslib, mylib) {
   'use strict';
 
+  var _TIMECONSTANT = 6*lib.intervals.Second;
+
   function ChatActivityDisplayerMixin () {
     this.chatActiveUsers = null;
     this.chatActiveOriginalText = null;
     this.chatActiveConversationID = null;
+    this.chatActiveReset = 1;
   }
   ChatActivityDisplayerMixin.prototype.destroy = function () {
+    this.chatActiveReset = null;
     this.chatActiveConversationID = null;
     this.chatActiveOriginalText = null;
     this.chatActiveUsers = null;
@@ -19,7 +23,12 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     this.setChatActiveConversationId(activityobj);
     this.setChatActiveUsers(activityobj);
     this.setChatActiveText(el);
-    lib.runNext(this.deactivateChatActivity.bind(this, activityobj), 6*lib.intervals.Second);
+    lib.runNext(this.deactivateChatActivity.bind(this, {
+      id: activityobj.id,
+      user: activityobj.user,
+      p2p: activityobj.p2p,
+      reset: this.chatActiveReset
+    }), _TIMECONSTANT);
     activityobj = null;
   };
   ChatActivityDisplayerMixin.prototype.setChatActiveConversationId = function (activityobj) {
@@ -29,24 +38,25 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     this.chatActiveConversationID = activityobj.id;
   };
   ChatActivityDisplayerMixin.prototype.setChatActiveUsers = function (activityobj) {
-    var whoindex, who = activityobj.user, p2p = activityobj.p2p;
+    var whofound, who = activityobj.user, p2p = activityobj.p2p;
     if (p2p) {
-      this.chatActiveUsers = lib.isVal(who) ? '' : null;
+      this.chatActiveUsers = lib.isVal(who) ? activeObject('', this.chatActiveReset) : null;
       return;
     }
     if (lib.isArray(this.chatActiveUsers)) {
       if (who) {
-        whoindex = this.chatActiveUsers.indexOf(who);
-        if (whoindex<0) {
-          this.chatActiveUsers.push(who);
+        whofound = arrayopslib.findElementWithProperty(this.chatActiveUsers, 'user', who);//this.chatActiveUsers.indexOf(who);
+        if (!whofound) { //whoindex<0) {
+          this.chatActiveUsers.push(activeObject(who, this.chatActiveReset));
           return;
         }
+        extendActiveObject(whofound);
         //maybe move "who" to the head of this.chatActiveUsers?
         return;
       }
       return;
     }
-    this.chatActiveUsers = who ? [who] : null;
+    this.chatActiveUsers = who ? [activeObject(who, this.chatActiveReset)] : null;
   };
   ChatActivityDisplayerMixin.prototype.setChatActiveText = function (el) {
     if (this.chatActiveOriginalText === null) {
@@ -66,6 +76,15 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     this.chatActiveOriginalText = null;
     this.chatActiveUsers = null;
   };
+  ChatActivityDisplayerMixin.prototype.resetOriginalText = function () {
+    var el;
+    if (!lib.isNumber(this.chatActiveReset)) {
+      return;
+    }
+    this.chatActiveReset++;
+    el = this.findChatActivityElement();
+    this.chatActiveOriginalText = el ? el.text() : null;
+  };
   ChatActivityDisplayerMixin.prototype.findChatActivityElement = function () {
     var el;
     if (!this.$element) {
@@ -78,11 +97,21 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     return el;
   };
   ChatActivityDisplayerMixin.prototype.deactivateChatActivity = function (activityobj) {
-    var userind, el;
+    var userfound, el;
     if (!activityobj) {
       return;
     }
     if (activityobj.id !== this.chatActiveConversationID) {
+      return;
+    }
+    if (activityobj.reset !== this.chatActiveReset) {
+      return;
+    }
+    userfound = arrayopslib.findElementAndIndexWithProperty(this.chatActiveUsers, 'user', activityobj.user);
+    if (!(userfound && userfound.element)) {
+      return;
+    }
+    if (Date.now() < userfound.element.until) {
       return;
     }
     if (activityobj.p2p) {
@@ -92,11 +121,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (!lib.isArray(this.chatActiveUsers)) {
       return;
     }
-    userind = this.chatActiveUsers.indexOf(activityobj.user);
-    if (userind<0) {
-      return;
-    }
-    this.chatActiveUsers.splice(userind, 1);
+    this.chatActiveUsers.splice(userfound.index, 1);
     if (this.chatActiveUsers.length<1) {
       this.resetChatActivity();
       return;
@@ -114,7 +139,23 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (users.length<1) {
       return '';
     }
-    return users.join(', ')+' ';
+    return users.reduce(commajoiner, '')+' ';
+  }
+
+  function commajoiner (res, item) {
+    if (res.length>0) {
+      res+=', ';
+    }
+    res += item.user;
+    return res;
+  }
+
+  function activeObject (who, resetid) {
+    return {user: who, reset: resetid, until: Date.now()+_TIMECONSTANT};
+  }
+
+  function extendActiveObject (obj) {
+    obj.until = Date.now() + _TIMECONSTANT;
   }
 
   ChatActivityDisplayerMixin.addMethods = function (klass) {
@@ -124,6 +165,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
       ,'setChatActiveUsers'
       ,'setChatActiveText'
       ,'resetChatActivity'
+      ,'resetOriginalText'
       ,'findChatActivityElement'
       ,'deactivateChatActivity'
     );

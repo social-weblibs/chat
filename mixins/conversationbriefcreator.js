@@ -40,8 +40,7 @@ function createChatConversationBriefMixin (lib, mylib) {
       if (this.maybeHideUnreadMessages()) {
         umel.hide();
       } else {
-        (lib.isNumber(nr) && nr>0) ? umel.show() : umel.hide();
-        umel.text(lib.isNumber(nr) ? (nr>100 ? '99+' : nr) : '');
+        updateUnreadMessagesElement(umel, nr);
       }
     }
     //console.log('msgs', data.conv);
@@ -49,6 +48,32 @@ function createChatConversationBriefMixin (lib, mylib) {
   ChatConversationBriefMixin.prototype.maybeHideUnreadMessages = function () {
     return this.__parent && this.__parent.__parent && this.__parent.__parent.activechat===this;
   };
+  ChatConversationBriefMixin.prototype.maybeDecreaseUnreadMessages = function () {
+    var umel, val;
+    if (!this.$element) {
+      return;
+    }
+    umel = this.$element.find('.UnreadMessages');
+    if (!(umel && umel[0])) {
+      return;
+    }
+    if (umel.is(':hidden')) {
+      return;
+    }
+    val = parseInt(umel.text());
+    if (!lib.isNumber(val)) {
+      return;
+    }
+    if (val<1) {
+      return;
+    }
+    updateUnreadMessagesElement(umel, val-1);
+  };
+
+  function updateUnreadMessagesElement(umel, nr) {
+    (lib.isNumber(nr) && nr>0) ? umel.show() : umel.hide();
+    umel.text(lib.isNumber(nr) ? (nr>100 ? '99+' : nr) : '');
+  }
 
   ChatConversationBriefMixin.addMethods = function (klass) {
     lib.inheritMethods(klass, ChatConversationBriefMixin
@@ -56,6 +81,7 @@ function createChatConversationBriefMixin (lib, mylib) {
       ,'onChatConversationBriefClicked'
       ,'handleConversationData'
       ,'maybeHideUnreadMessages'
+      ,'maybeDecreaseUnreadMessages'
     );
     klass.prototype.postInitializationMethodNames = 
       klass.prototype.postInitializationMethodNames.concat('initChatConversationBrief');
