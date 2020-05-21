@@ -1,5 +1,11 @@
 {
   "browserify": {
     "dist/browserified.js": "index.js"
+  },
+  "dependencies": {
+    "js": [
+      "allex:timer:lib",
+      "allex:arrayoperations:lib"
+    ]
   }
 }

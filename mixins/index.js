@@ -1,10 +1,12 @@
-function createMixins (lib, mylib) {
+function createMixins (lib, timerlib, arrayopslib, mylib) {
   'use strict';
 
   var mixins = {};
 
-  require('./interfacecreator')(lib, mixins);
+  require('./interfacecreator')(lib, timerlib, mixins);
   require('./conversationbriefcreator')(lib, mixins);
+  require('./heartbeathandlercreator')(lib, mixins);
+  require('./activitydisplayercreator')(lib, arrayopslib, mixins);
 
   mylib.mixins = mixins;
 }
