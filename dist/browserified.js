@@ -50,7 +50,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     this.setChatActiveUsers(activityobj);
     this.setChatActiveText(el);
     lib.runNext(this.deactivateChatActivity.bind(this, {
-      id: activityobj.id,
+      id: activityobj.conversationid,
       user: activityobj.user,
       p2p: activityobj.p2p,
       reset: this.chatActiveReset
@@ -61,7 +61,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (!activityobj) {
       this.resetChatActivity();
     }
-    this.chatActiveConversationID = activityobj.id;
+    this.chatActiveConversationID = activityobj.conversationid;
   };
   ChatActivityDisplayerMixin.prototype.setChatActiveUsers = function (activityobj) {
     var whofound, who = activityobj.user, p2p = activityobj.p2p;
@@ -210,8 +210,9 @@ function createChatConversationBriefMixin (lib, mylib) {
     this.clicker = this.onChatConversationBriefClicked.bind(this);
   }
   ChatConversationBriefMixin.prototype.destroy = function () {
-    if (this.$element && this.clicker) {
-      this.$element.off('click', this.clicker);
+    var cel = this.findChatClickableElement();
+    if (cel && this.clicker) {
+      cel.off('click', this.clicker);
     }
     this.clicker = null;
     if (this.selected) {
@@ -220,8 +221,9 @@ function createChatConversationBriefMixin (lib, mylib) {
     this.selected = null;
   };
   ChatConversationBriefMixin.prototype.initChatConversationBrief = function () {
-    if (this.$element) {
-      this.$element.on('click', this.clicker);
+    var cel = this.findChatClickableElement();
+    if (cel) {
+      cel.on('click', this.clicker);
     }
   };
   ChatConversationBriefMixin.prototype.onChatConversationBriefClicked = function () {
@@ -273,6 +275,14 @@ function createChatConversationBriefMixin (lib, mylib) {
     }
     updateUnreadMessagesElement(umel, val-1);
   };
+  ChatConversationBriefMixin.prototype.findChatClickableElement = function () {
+    var cce;
+    if (!this.$element) {
+      return null;
+    }
+    cce = this.getConfigVal('chatclickableelement');
+    return cce ? this.$element.find(cce) : this.$element;
+  };
 
   function updateUnreadMessagesElement(umel, nr) {
     (lib.isNumber(nr) && nr>0) ? umel.show() : umel.hide();
@@ -286,6 +296,7 @@ function createChatConversationBriefMixin (lib, mylib) {
       ,'handleConversationData'
       ,'maybeHideUnreadMessages'
       ,'maybeDecreaseUnreadMessages'
+      ,'findChatClickableElement'
     );
     klass.prototype.postInitializationMethodNames = 
       klass.prototype.postInitializationMethodNames.concat('initChatConversationBrief');
@@ -429,7 +440,19 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
     }
     console.log('lastnotification', data);
     if (data.newgroup) {
-      //ask for a new group
+      this.appendConversation({
+        id: data.id,
+        resolve: data.resolve,
+        conv: {
+          lastm: null,
+          nr: 0,
+          cby: data.affected[0],
+          p2p: data.p2p,
+          mids: data.mids,
+          picture: data.picture,
+          name: data.name
+        }
+      });
       return false; //doesn't need to be false actually
     }
     if (data.newgroupmember) {
@@ -530,6 +553,11 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       return;
     }
   };
+  ChatInterfaceMixin.prototype.appendConversation = function (conversationobj) {
+    var mydata = (this.get('data') || []).slice(); //these are conversations
+    mydata.push(conversationobj);
+    this.set('data', mydata);
+  };
   ChatInterfaceMixin.prototype.onHeartbeatTimer = function () {
     if (!this.heartbeat) {
       return;
@@ -545,6 +573,7 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       ,'handleMessageSeen'
       ,'detachActiveChat'
       ,'userNameForId'
+      ,'appendConversation'
       ,'onHeartbeatTimer'
     );
   };

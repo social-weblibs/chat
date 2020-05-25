@@ -6,8 +6,9 @@ function createChatConversationBriefMixin (lib, mylib) {
     this.clicker = this.onChatConversationBriefClicked.bind(this);
   }
   ChatConversationBriefMixin.prototype.destroy = function () {
-    if (this.$element && this.clicker) {
-      this.$element.off('click', this.clicker);
+    var cel = this.findChatClickableElement();
+    if (cel && this.clicker) {
+      cel.off('click', this.clicker);
     }
     this.clicker = null;
     if (this.selected) {
@@ -16,8 +17,9 @@ function createChatConversationBriefMixin (lib, mylib) {
     this.selected = null;
   };
   ChatConversationBriefMixin.prototype.initChatConversationBrief = function () {
-    if (this.$element) {
-      this.$element.on('click', this.clicker);
+    var cel = this.findChatClickableElement();
+    if (cel) {
+      cel.on('click', this.clicker);
     }
   };
   ChatConversationBriefMixin.prototype.onChatConversationBriefClicked = function () {
@@ -69,6 +71,14 @@ function createChatConversationBriefMixin (lib, mylib) {
     }
     updateUnreadMessagesElement(umel, val-1);
   };
+  ChatConversationBriefMixin.prototype.findChatClickableElement = function () {
+    var cce;
+    if (!this.$element) {
+      return null;
+    }
+    cce = this.getConfigVal('chatclickableelement');
+    return cce ? this.$element.find(cce) : this.$element;
+  };
 
   function updateUnreadMessagesElement(umel, nr) {
     (lib.isNumber(nr) && nr>0) ? umel.show() : umel.hide();
@@ -82,6 +92,7 @@ function createChatConversationBriefMixin (lib, mylib) {
       ,'handleConversationData'
       ,'maybeHideUnreadMessages'
       ,'maybeDecreaseUnreadMessages'
+      ,'findChatClickableElement'
     );
     klass.prototype.postInitializationMethodNames = 
       klass.prototype.postInitializationMethodNames.concat('initChatConversationBrief');

@@ -84,7 +84,19 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
     }
     console.log('lastnotification', data);
     if (data.newgroup) {
-      //ask for a new group
+      this.appendConversation({
+        id: data.id,
+        resolve: data.resolve,
+        conv: {
+          lastm: null,
+          nr: 0,
+          cby: data.affected[0],
+          p2p: data.p2p,
+          mids: data.mids,
+          picture: data.picture,
+          name: data.name
+        }
+      });
       return false; //doesn't need to be false actually
     }
     if (data.newgroupmember) {
@@ -185,6 +197,11 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       return;
     }
   };
+  ChatInterfaceMixin.prototype.appendConversation = function (conversationobj) {
+    var mydata = (this.get('data') || []).slice(); //these are conversations
+    mydata.push(conversationobj);
+    this.set('data', mydata);
+  };
   ChatInterfaceMixin.prototype.onHeartbeatTimer = function () {
     if (!this.heartbeat) {
       return;
@@ -200,6 +217,7 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       ,'handleMessageSeen'
       ,'detachActiveChat'
       ,'userNameForId'
+      ,'appendConversation'
       ,'onHeartbeatTimer'
     );
   };

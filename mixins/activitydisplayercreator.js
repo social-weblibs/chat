@@ -24,7 +24,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     this.setChatActiveUsers(activityobj);
     this.setChatActiveText(el);
     lib.runNext(this.deactivateChatActivity.bind(this, {
-      id: activityobj.id,
+      id: activityobj.conversationid,
       user: activityobj.user,
       p2p: activityobj.p2p,
       reset: this.chatActiveReset
@@ -35,7 +35,7 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (!activityobj) {
       this.resetChatActivity();
     }
-    this.chatActiveConversationID = activityobj.id;
+    this.chatActiveConversationID = activityobj.conversationid;
   };
   ChatActivityDisplayerMixin.prototype.setChatActiveUsers = function (activityobj) {
     var whofound, who = activityobj.user, p2p = activityobj.p2p;
