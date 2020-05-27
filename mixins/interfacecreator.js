@@ -1,4 +1,4 @@
-function createChatInterfaceMixin (lib, timerlib, mylib) {
+function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
   'use strict';
 
   function ChatInterfaceMixin () {
@@ -10,6 +10,7 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
     this.messageToEdit = this.createBufferableHookCollection();
     this.active = this.createBufferableHookCollection();
     this.needGroupCandidates = this.createBufferableHookCollection();
+    this.needGroupInfoDisplay = this.createBufferableHookCollection();
     this.chatSelected = this.createBufferableHookCollection();
     this.forgetSelected = this.createBufferableHookCollection();
     this.needUserNameForId = this.createBufferableHookCollection();
@@ -44,6 +45,10 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       this.chatSelected.destroy();
     }
     this.chatSelected = null;
+    if (this.needGroupInfoDisplay) {
+      this.needGroupInfoDisplay.destroy();
+    }
+    this.needGroupInfoDisplay = null;
     if (this.needGroupCandidates) {
       this.needGroupCandidates.destroy();
     }
@@ -142,7 +147,7 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
         throw new Error('My lastm id '+newaff.conv.lastm.id+' should have matched incoming '+data.mids[0]);
       }
       newaff.conv.nr = data.nr;
-      newaff.conv.lastm = lib.extend({id: data.mids.length<2 ? data.mids[0] : data.mids[1]}, data.lastmessage);
+      newaff.conv.lastm = lib.extend({id: data.mids.length<2 ? data.mids[0] : data.mids[1]}, data.lastm);
     }
     data2newaff(data, 'rcvdat', newaff, 'rcvdm');
     data2newaff(data, 'seenat', newaff, 'seenm');
@@ -188,11 +193,32 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
     this.forgetSelected.fire(true);
   };
   ChatInterfaceMixin.prototype.userNameForId = function (queryobj) {
-    if (queryobj.context && queryobj.context.activity) {
+    var context;
+    if (!(queryobj && queryobj.context)) {
+      return;
+    }
+    context = queryobj.context;
+    if (context.activity) {
       this.userActive.fire({
-        p2p: queryobj.context.p2p,
-        conversationid: queryobj.context.id,
+        p2p: context.p2p,
+        conversationid: context.id,
         user: queryobj.username
+      });
+      return;
+    }
+    if (context.newgroupmember) {
+      this.alterOrAppendConversation({
+        id: context.id,
+        resolve: context.resolve,
+        conv: {
+          lastm: context.lastm,
+          nr: context.nr,
+          cby: context.cby,
+          p2p: context.p2p,
+          mids: context.mids,
+          picture: context.picture,
+          name: context.name
+        }
       });
       return;
     }
@@ -201,6 +227,19 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
     var mydata = (this.get('data') || []).slice(); //these are conversations
     mydata.push(conversationobj);
     this.set('data', mydata);
+  };
+  ChatInterfaceMixin.prototype.alterOrAppendConversation = function (conversationobj) {
+    var mydata, found;
+    mydata = this.get('data');
+    if (lib.isArray(mydata)) {
+      found = arrayopslib.findElementWithProperty(mydata, 'id', conversationobj.id);
+    }
+    if (found) {
+      lib.extend(found, conversationobj);
+      this.set('data', mydata.slice());
+      return;
+    }
+    this.appendConversation(conversationobj);
   };
   ChatInterfaceMixin.prototype.onHeartbeatTimer = function () {
     if (!this.heartbeat) {
@@ -218,6 +257,7 @@ function createChatInterfaceMixin (lib, timerlib, mylib) {
       ,'detachActiveChat'
       ,'userNameForId'
       ,'appendConversation'
+      ,'alterOrAppendConversation'
       ,'onHeartbeatTimer'
     );
   };

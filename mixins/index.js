@@ -3,7 +3,7 @@ function createMixins (lib, timerlib, arrayopslib, mylib) {
 
   var mixins = {};
 
-  require('./interfacecreator')(lib, timerlib, mixins);
+  require('./interfacecreator')(lib, timerlib, arrayopslib, mixins);
   require('./conversationbriefcreator')(lib, mixins);
   require('./heartbeathandlercreator')(lib, mixins);
   require('./activitydisplayercreator')(lib, arrayopslib, mixins);
