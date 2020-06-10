@@ -107,7 +107,12 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (activityobj.reset !== this.chatActiveReset) {
       return;
     }
-    userfound = arrayopslib.findElementAndIndexWithProperty(this.chatActiveUsers, 'user', activityobj.user);
+    userfound = lib.isArray(this.chatActiveUsers) ?
+      arrayopslib.findElementAndIndexWithProperty(this.chatActiveUsers, 'user', activityobj.user)
+      :
+      {
+        element: this.chatActiveUsers
+      };
     if (!(userfound && userfound.element)) {
       return;
     }
@@ -121,8 +126,14 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (!lib.isArray(this.chatActiveUsers)) {
       return;
     }
-    this.chatActiveUsers.splice(userfound.index, 1);
-    if (this.chatActiveUsers.length<1) {
+    if (lib.isArray(this.chatActiveUsers)) {
+      this.chatActiveUsers.splice(userfound.index, 1);
+      if (this.chatActiveUsers.length<1) {
+        this.resetChatActivity();
+        return;
+      }
+    } else {
+      this.chatActiveUsers = null;
       this.resetChatActivity();
       return;
     }

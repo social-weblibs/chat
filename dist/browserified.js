@@ -133,7 +133,12 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (activityobj.reset !== this.chatActiveReset) {
       return;
     }
-    userfound = arrayopslib.findElementAndIndexWithProperty(this.chatActiveUsers, 'user', activityobj.user);
+    userfound = lib.isArray(this.chatActiveUsers) ?
+      arrayopslib.findElementAndIndexWithProperty(this.chatActiveUsers, 'user', activityobj.user)
+      :
+      {
+        element: this.chatActiveUsers
+      };
     if (!(userfound && userfound.element)) {
       return;
     }
@@ -147,8 +152,14 @@ function createChatActivityDisplayer (lib, arrayopslib, mylib) {
     if (!lib.isArray(this.chatActiveUsers)) {
       return;
     }
-    this.chatActiveUsers.splice(userfound.index, 1);
-    if (this.chatActiveUsers.length<1) {
+    if (lib.isArray(this.chatActiveUsers)) {
+      this.chatActiveUsers.splice(userfound.index, 1);
+      if (this.chatActiveUsers.length<1) {
+        this.resetChatActivity();
+        return;
+      }
+    } else {
+      this.chatActiveUsers = null;
       this.resetChatActivity();
       return;
     }
@@ -372,6 +383,8 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
     this.needUserNameForId = this.createBufferableHookCollection();
     this.userActive = this.createBufferableHookCollection();
     this.heartbeat = this.createBufferableHookCollection();
+    this.messageBoxFocused = this.createBufferableHookCollection();
+    this.messageBoxBlurred = this.createBufferableHookCollection();
     this.timer = new timerlib.Timer(this.onHeartbeatTimer.bind(this));
     this.activechat = null;
     this.lastnotification = null;
@@ -381,6 +394,14 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
     this.chatmessages = null;
     this.lastnotification = null;
     this.activechat = null;
+    if (this.messageBoxBlurred) {
+      this.messageBoxBlurred.destroy();
+    }
+    this.messageBoxBlurred = null;
+    if (this.messageBoxFocused) {
+      this.messageBoxFocused.destroy();
+    }
+    this.messageBoxFocused = null;
     if (this.heartbeat) {
       this.heartbeat.destroy();
     }
