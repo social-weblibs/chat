@@ -14,6 +14,7 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
     this.chatSelected = this.createBufferableHookCollection();
     this.forgetSelected = this.createBufferableHookCollection();
     this.needUserNameForId = this.createBufferableHookCollection();
+    this.needFullDataForId = this.createBufferableHookCollection();
     this.userActive = this.createBufferableHookCollection();
     this.heartbeat = this.createBufferableHookCollection();
     this.messageBoxFocused = this.createBufferableHookCollection();
@@ -43,6 +44,10 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
       this.userActive.destroy();
     }
     this.userActive = null;
+    if (this.needFullDataForId) {
+      this.needFullDataForId.destroy();
+    }
+    this.needFullDataForId = null;
     if (this.needUserNameForId) {
       this.needUserNameForId.destroy();
     }
@@ -105,7 +110,7 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
         conv: {
           lastm: null,
           nr: 0,
-          cby: data.affected[0],
+          cby: null, //that's me, not data.affected[0] which is my real username,
           p2p: data.p2p,
           mids: data.mids,
           picture: data.picture,
@@ -233,6 +238,12 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
       return;
     }
   };
+  ChatInterfaceMixin.prototype.fullDataForId = function (queryobj) {
+    if (!(queryobj && lib.isFunction(queryobj.callback) && queryobj.fulldata)) {
+      return;
+    }
+    queryobj.callback(queryobj.fulldata);
+  };
   ChatInterfaceMixin.prototype.appendConversation = function (conversationobj) {
     var mydata = (this.get('data') || []).slice(); //these are conversations
     mydata.push(conversationobj);
@@ -266,6 +277,7 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
       ,'handleMessageSeen'
       ,'detachActiveChat'
       ,'userNameForId'
+      ,'fullDataForId'
       ,'appendConversation'
       ,'alterOrAppendConversation'
       ,'onHeartbeatTimer'

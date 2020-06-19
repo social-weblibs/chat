@@ -36,6 +36,7 @@ function createChatConversationBriefMixin (lib, mylib) {
     if (!this.$element) {
       return;
     }
+    this.$element.data('chat', data);
     nr = data.conv.nr;
     umel = this.$element.find('.UnreadMessages');
     if (umel) {
