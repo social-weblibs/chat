@@ -1,6 +1,8 @@
 function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
   'use strict';
 
+  var q = lib.q;
+
   function ChatInterfaceMixin () {
     this.needConversations = this.createBufferableHookCollection();
     this.needInitiations = this.createBufferableHookCollection();
@@ -103,6 +105,10 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
       return;
     }
     console.log('lastnotification', data);
+    if (data.removedid) {
+      this.removeConversation(data.removedid);
+      return false;
+    }
     if (data.newgroup) {
       this.appendConversation({
         id: data.id,
@@ -242,6 +248,13 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
     if (!(queryobj && lib.isFunction(queryobj.callback) && queryobj.fulldata)) {
       return;
     }
+    if (q.isThenable(queryobj.fulldata)) {
+      queryobj.fulldata.then(
+        queryobj.callback,
+        console.error.bind(console, 'error in getting fullDataForId')
+      );
+      return;
+    }
     queryobj.callback(queryobj.fulldata);
   };
   ChatInterfaceMixin.prototype.appendConversation = function (conversationobj) {
@@ -262,6 +275,22 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
     }
     this.appendConversation(conversationobj);
   };
+  ChatInterfaceMixin.prototype.removeConversation = function (removeid) {
+    var mydata, ret, i, conv;
+    mydata = this.get('data');
+    if (!lib.isArray(mydata)) {
+      return;
+    }
+    ret = [];
+    for (i=0; i<mydata.length; i++) {
+      conv = mydata[i];
+      if (conv.id === removeid) {
+        continue;
+      }
+      ret.push(conv);
+    }
+    this.set('data', ret);
+  };
   ChatInterfaceMixin.prototype.onHeartbeatTimer = function () {
     if (!this.heartbeat) {
       return;
@@ -280,6 +309,7 @@ function createChatInterfaceMixin (lib, timerlib, arrayopslib, mylib) {
       ,'fullDataForId'
       ,'appendConversation'
       ,'alterOrAppendConversation'
+      ,'removeConversation'
       ,'onHeartbeatTimer'
     );
   };
